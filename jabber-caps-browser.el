@@ -53,20 +53,22 @@
   (cl-flet
       ((key-features
 	(key)
-	(sort
-	 (copy-sequence (second (gethash key jabber-caps-cache)))
-	 'string<))
+	(copy-sequence (second (gethash key jabber-caps-cache))))
+       (sort-features
+	(features)
+	(cl-sort features #'string< :key #'jabber-caps-browser-maybe-name-feature))
        (feature-item
 	(feature)
 	(widget-convert 'item :value (jabber-caps-browser-maybe-name-feature feature))))
     (let* ((keys (widget-get widget :caps-keys))
 	   (common-features
-	    (cl-reduce
-	     (lambda (features-acc key)
-	       (if (eq features-acc :initial)
-		   (key-features key)
-		 (cl-intersection features-acc (key-features key) :test #'string=)))
-	     keys :initial-value :initial)))
+	    (sort-features
+	     (cl-reduce
+	      (lambda (features-acc key)
+		(if (eq features-acc :initial)
+		    (key-features key)
+		  (cl-intersection features-acc (key-features key) :test #'string=)))
+	      keys :initial-value :initial))))
       (if (null (cdr keys))
 	  ;; Just one version?
 	  (list (widget-convert
@@ -85,7 +87,10 @@
 	     :value key
 	     :args
 	     (mapcar #'feature-item
-		     (cl-set-difference (key-features key) common-features :test #'string=))))
+		     (sort-features
+		      (cl-set-difference
+		       (key-features key) common-features
+		       :test #'string=)))))
 	  keys))))))
 
 (defun jabber-caps-browser-expand-features (_)
@@ -101,7 +106,11 @@
 		(push (list feature key) features-keys))))
 	  features)))
      jabber-caps-cache)
-    (setq features-keys (cl-sort features-keys #'string< :key #'car))
+    (setq features-keys
+	  (cl-sort features-keys #'string<
+		   :key (lambda (feature-keys)
+			  (jabber-caps-browser-maybe-name-feature
+			   (car feature-keys)))))
     (mapcar
      (lambda (feature-keys)
        (let ((feature (car feature-keys))
