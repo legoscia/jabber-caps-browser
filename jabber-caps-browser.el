@@ -1,6 +1,7 @@
 ;;; jabber-caps-browser.el ---                    -*- lexical-binding: t; -*-
 
 (require 'tree-widget)
+(require 'cl-lib)
 
 (defun jabber-caps-browser ()
   (interactive)
@@ -36,10 +37,7 @@
 	     (push key (cdr entry))
 	   (push (list name key) types))))
      jabber-caps-cache)
-    (setq types
-	  (sort types
-		(lambda (a b)
-		  (string< (car a) (car b)))))
+    (setq types (cl-sort types #'string< :key #'car))
     (mapcar
      (lambda (type)
        (let ((name (car type))
@@ -103,9 +101,7 @@
 		(push (list feature key) features-keys))))
 	  features)))
      jabber-caps-cache)
-    (setq features-keys (sort features-keys
-			      (lambda (a b)
-				(string< (car a) (car b)))))
+    (setq features-keys (cl-sort features-keys #'string< :key #'car))
     (mapcar
      (lambda (feature-keys)
        (let ((feature (car feature-keys))
