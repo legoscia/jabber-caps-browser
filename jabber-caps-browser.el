@@ -1,10 +1,49 @@
-;;; jabber-caps-browser.el ---                    -*- lexical-binding: t; -*-
+;;; jabber-caps-browser.el --- explore features advertised by Jabber clients  -*- lexical-binding: t; -*-
+
+;; Copyright (C) 2014  Magnus Henoch
+
+;; Author: Magnus Henoch
+;; Version: 0.1
+;; Package-Requires: ((jabber "0.8.92") (cl-lib "1.0"))
+
+;; This program is free software; you can redistribute it and/or modify
+;; it under the terms of the GNU General Public License as published by
+;; the Free Software Foundation, either version 3 of the License, or
+;; (at your option) any later version.
+
+;; This program is distributed in the hope that it will be useful,
+;; but WITHOUT ANY WARRANTY; without even the implied warranty of
+;; MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+;; GNU General Public License for more details.
+
+;; You should have received a copy of the GNU General Public License
+;; along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
+;;; Commentary:
+
+;; This module is an addon to jabber.el, the Emacs Jabber client.
+;; jabber.el supports XEP-0115: Entity Capabilities, which means that
+;; it is able to gather information about features supported by other
+;; Jabber clients.  This information can be viewed in the variable
+;; `jabber-caps-cache', but jabber-caps-browser offers a visualisation
+;; of the data.
+;;
+;; To use it, type M-x jabber-caps-browser.  As jabber.el accumulates
+;; data while it is connected but doesn't save it to disk, you're more
+;; likely to have interesting information after having been connected
+;; for a while.
+
+;;; Code:
 
 (require 'tree-widget)
 (require 'cl-lib)
+(require 'jabber-disco)
 
+;;;###autoload
 (defun jabber-caps-browser ()
   (interactive)
+  (unless (boundp 'jabber-caps-cache)
+    (error "`jabber-caps-cache' is not bound.  Is your jabber.el too old?"))
   (with-current-buffer (get-buffer-create "*jabber-caps-browser*")
     (erase-buffer)
     (widget-minor-mode)
@@ -239,3 +278,6 @@
     (if description
 	(format "%s (%s)" description feature)
       feature)))
+
+(provide 'jabber-caps-browser)
+;;; jabber-caps-browser.el ends here
