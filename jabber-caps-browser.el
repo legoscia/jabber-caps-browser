@@ -107,7 +107,13 @@
        (mapc
 	(lambda (resource-info)
 	  (when (equal key (plist-get (cdr resource-info) 'caps))
-	    (push (jabber-jid-displayname jid-symbol) contacts)))
+	    (push
+	     (if (assoc (symbol-name jid-symbol) *jabber-active-groupchats*)
+		 ;; We got this from a participant in an MUC
+		 (format "%s in %s"
+			 (car resource-info) (jabber-jid-displayname jid-symbol))
+	       (jabber-jid-displayname jid-symbol))
+	     contacts)))
 	(get jid-symbol 'resources)))
      jabber-jid-obarray)
     (mapcar
