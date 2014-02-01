@@ -32,6 +32,12 @@
 ;; data while it is connected but doesn't save it to disk, you're more
 ;; likely to have interesting information after having been connected
 ;; for a while.
+;;
+;; The first time you run the browser, it will look for data files
+;; published by the XMPP Standards Foundation, and display a warning
+;; if it cannot find what it's looking for.  See the documentation for
+;; the variable `jabber-caps-browser-xmpp-data-dir' for more
+;; information.
 
 ;;; Code:
 
@@ -219,7 +225,14 @@
 (defvar jabber-caps-browser-feature-names :not-loaded)
 
 (defvar jabber-caps-browser-xmpp-data-dir "~/src/xmpp/"
-  "Get this from git://gitorious.org/xmpp/xmpp.git")
+  "Path to data files published by the XMPP Standards Foundation.
+If you download these files, the caps browser can provide slightly
+more readable descriptions of the features, instead of plain
+namespace URIs.
+
+You can get these files from git://gitorious.org/xmpp/xmpp.git .
+See http://xmpp.org/about-xmpp/xsf/xsf-source-control/ for more
+information.")
 
 (defun jabber-caps-browser-maybe-load-feature-names ()
   (when (eq jabber-caps-browser-feature-names :not-loaded)
@@ -231,7 +244,7 @@
 			  jabber-caps-browser-xmpp-data-dir)))
     (if (not (file-exists-p features-file))
 	(progn
-	  (warn "Cannot open %s to read XMPP namespace info"
+	  (warn "Cannot open %s to read XMPP namespace info.  See the documentation of `jabber-caps-browser-xmpp-data-dir' for more information"
 		features-file)
 	  (setq jabber-caps-browser-feature-names nil))
       ;; Need to use xmllint, because xml.el doesn't expand external
