@@ -62,36 +62,58 @@
 	(widget-convert 'item :value (jabber-caps-browser-maybe-name-feature feature))))
     (let* ((keys (widget-get widget :caps-keys))
 	   (common-features
-	    (sort-features
-	     (cl-reduce
-	      (lambda (features-acc key)
-		(if (eq features-acc :initial)
-		    (key-features key)
-		  (cl-intersection features-acc (key-features key) :test #'string=)))
-	      keys :initial-value :initial))))
+	    ;; Don't bother trying to determine common features if
+	    ;; there is only one version.
+	    (when (cdr keys)
+	      (sort-features
+	       (cl-reduce
+		(lambda (a b) (cl-intersection a b :test #'string=))
+		keys :key #'key-features))))
+	   (version-widgets
+	    (mapcar
+	     (lambda (key)
+	       (widget-convert
+		'tree-widget
+		:value key
+		:args
+		(cons
+		 (widget-convert
+		  'tree-widget
+		  :tag "Online contacts"
+		  :caps-key key
+		  :expander 'jabber-caps-browser-expand-online-contacts)
+		 (mapcar #'feature-item
+			 (sort-features
+			  (cl-set-difference
+			   ;; common-features is nil if we only have one version.
+			   (key-features key) common-features
+			   :test #'string=))))))
+	     keys)))
       (if (null (cdr keys))
-	  ;; Just one version?
-	  (list (widget-convert
-		 'tree-widget
-		 :value (car keys)
-		 :args (mapcar #'feature-item common-features)))
+	  ;; Just one version?  Skip "Common features".
+	  version-widgets
 	(cons
 	 (widget-convert
 	  'tree-widget
 	  :tag "Common features"
 	  :args (mapcar #'feature-item common-features))
-	 (mapcar
-	  (lambda (key)
-	    (widget-convert
-	     'tree-widget
-	     :value key
-	     :args
-	     (mapcar #'feature-item
-		     (sort-features
-		      (cl-set-difference
-		       (key-features key) common-features
-		       :test #'string=)))))
-	  keys))))))
+	 version-widgets)))))
+
+(defun jabber-caps-browser-expand-online-contacts (widget)
+  (let ((key (widget-get widget :caps-key))
+	contacts)
+    (mapatoms
+     (lambda (jid-symbol)
+       (mapc
+	(lambda (resource-info)
+	  (when (equal key (plist-get (cdr resource-info) 'caps))
+	    (push (jabber-jid-displayname jid-symbol) contacts)))
+	(get jid-symbol 'resources)))
+     jabber-jid-obarray)
+    (mapcar
+     (lambda (contact)
+       (widget-convert 'item :value contact))
+     (sort contacts #'string<))))
 
 (defun jabber-caps-browser-expand-features (_)
   (let (features-keys)
