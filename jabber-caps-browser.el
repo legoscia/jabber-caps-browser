@@ -75,12 +75,13 @@
   (let (types)
     (maphash
      (lambda (key value)
-       (let* ((identities (first value))
-	      (name (jabber-caps-browser-identities-to-name identities))
-	      (entry (assoc name types)))
-	 (if entry
-	     (push key (cdr entry))
-	   (push (list name key) types))))
+       (unless (floatp (first value))
+	 (let* ((identities (first value))
+		(name (jabber-caps-browser-identities-to-name identities))
+		(entry (assoc name types)))
+	   (if entry
+	       (push key (cdr entry))
+	     (push (list name key) types)))))
      jabber-caps-cache)
     (setq types (cl-sort types #'string< :key #'car))
     (mapcar
