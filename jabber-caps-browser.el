@@ -217,10 +217,27 @@
 (defun jabber-caps-browser-identities-to-name (identities)
   (mapconcat
    (lambda (identity)
-     (concat (aref identity 0)
-	     " (" (aref identity 1)
-	     "/" (aref identity 2) ")"))
-   identities
+     (let ((name (aref identity 0))
+	   (category (aref identity 1))
+	   (type (aref identity 2)))
+       ;; name is optional
+       (if name
+	   (format "%s (%s/%s)" name category type)
+	 (format "%s/%s" category type))))
+   ;; If an entity has multiple identities, sort them by name, putting
+   ;; identities without names last.
+   (sort
+    identities
+    (lambda (a b)
+      (let ((a-name (aref a 0))
+	    (b-name (aref b 0)))
+	(if a-name
+	    (if b-name
+		(string< a-name b-name)
+	      ;; If B has no name, A goes first
+	      t)
+	  ;; If A has no name, B goes first
+	  nil))))
    " + "))
 
 (defvar jabber-caps-browser-feature-names :not-loaded)
