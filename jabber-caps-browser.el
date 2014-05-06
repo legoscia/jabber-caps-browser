@@ -258,47 +258,51 @@ information.")
 
 (defun jabber-caps-browser-load-feature-names ()
   (let ((features-file (expand-file-name
-			  "registrar/disco-features.xml"
-			  jabber-caps-browser-xmpp-data-dir)))
+			"registrar/disco-features.xml"
+			jabber-caps-browser-xmpp-data-dir)))
     (if (not (file-exists-p features-file))
 	(progn
 	  (warn "Cannot open %s to read XMPP namespace info.  See the documentation of `jabber-caps-browser-xmpp-data-dir' for more information"
 		features-file)
 	  (setq jabber-caps-browser-feature-names nil))
-      ;; Need to use xmllint, because xml.el doesn't expand external
-      ;; entities.
-      (with-temp-buffer
-	(let ((exit-code (call-process "xmllint" nil (current-buffer) nil
-				       "--noent" features-file)))
-	  (if (not (zerop exit-code))
-	      (warn "Cannot process %s: exit code %s, output %s"
-		    features-file exit-code (buffer-string))
-	    (let* ((xml-data (car (xml-parse-region (point-min) (point-max))))
-		   (vars (jabber-xml-get-children xml-data 'var)))
-	      (setq jabber-caps-browser-feature-names
-		    (mapcar
-		     (lambda (var-entry)
-		       (let* ((var-name (jabber-xml-path var-entry '(name "")))
-			      (var-desc (jabber-xml-path var-entry '(desc "")))
-			      (var-doc
-			       (or (jabber-xml-path var-entry '(doc link ""))
-				   (jabber-xml-path var-entry '(doc ""))))
-			      (description
-			       (mapconcat
-				'identity
-				;; Remove boring texts
-				(cl-remove-if
-				 (lambda (text)
-				   (cl-some
-				    (lambda (regexp) (string-match-p regexp text))
-				    '("^See XEP-....$"
-				      "^See RFC ....$"
-				      "^DEPRECATED$"
-				      "^N/A$")))
-				 (list var-doc var-desc))
-				" - ")))
-			 (cons var-name description)))
-		     vars)))))))))
+      (let* ((xml-data (jabber-caps-browser-load-xml-file features-file))
+	     (vars (jabber-xml-get-children xml-data 'var)))
+	(setq jabber-caps-browser-feature-names
+	      (mapcar
+	       (lambda (var-entry)
+		 (let* ((var-name (jabber-xml-path var-entry '(name "")))
+			(var-desc (jabber-xml-path var-entry '(desc "")))
+			(var-doc
+			 (or (jabber-xml-path var-entry '(doc link ""))
+			     (jabber-xml-path var-entry '(doc ""))))
+			(description
+			 (mapconcat
+			  'identity
+			  ;; Remove boring texts
+			  (cl-remove-if
+			   (lambda (text)
+			     (cl-some
+			      (lambda (regexp) (string-match-p regexp text))
+			      '("^See XEP-....$"
+				"^See RFC ....$"
+				"^DEPRECATED$"
+				"^N/A$")))
+			   (list var-doc var-desc))
+			  " - ")))
+		   (cons var-name description)))
+	       vars))))))
+
+(defun jabber-caps-browser-load-xml-file (filename)
+  ;; Need to use xmllint, because xml.el doesn't expand external
+  ;; entities.
+  (with-temp-buffer
+    (let ((exit-code (call-process "xmllint" nil (current-buffer) nil
+				   "--noent" filename)))
+      (if (zerop exit-code)
+	  (car (xml-parse-region (point-min) (point-max)))
+	(warn "Cannot process %s: exit code %s, output %s"
+	      filename exit-code (buffer-string))
+	nil))))
 
 (defun jabber-caps-browser-lookup-feature (feature)
   (jabber-caps-browser-maybe-load-feature-names)
