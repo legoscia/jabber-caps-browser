@@ -290,7 +290,31 @@ information.")
 			   (list var-doc var-desc))
 			  " - ")))
 		   (cons var-name description)))
-	       vars))))))
+	       vars)))))
+
+  (let ((namespaces-file (expand-file-name
+			  "registrar/namespaces.xml"
+			  jabber-caps-browser-xmpp-data-dir)))
+    (if (not (file-exists-p namespaces-file))
+	(warn "Cannot open %s to read XMPP namespace info.  See the documentation of `jabber-caps-browser-xmpp-data-dir' for more information"
+	      namespaces-file)
+      (let* ((xml-data (jabber-caps-browser-load-xml-file namespaces-file))
+	     (ns (jabber-xml-get-children xml-data 'ns)))
+	(mapc
+	 (lambda (ns-entry)
+	   (let* ((var-name (jabber-xml-path ns-entry '(name "")))
+		  (var-doc
+		   (or (jabber-xml-path ns-entry '(doc link ""))
+		       (jabber-xml-path ns-entry '(doc "")))))
+	     ;; Only fill in what we didn't get from the features
+	     ;; file.  In principle, everything that we might receive
+	     ;; as a disco feature should be documented in
+	     ;; disco-features.xml, but it shouldn't hurt to look up
+	     ;; features as namespaces in case the first lookup fails.
+	     (unless (assoc var-name jabber-caps-browser-feature-names)
+	       (push (cons var-name var-doc) jabber-caps-browser-feature-names))))
+	 ns)
+	t))))
 
 (defun jabber-caps-browser-load-xml-file (filename)
   ;; Need to use xmllint, because xml.el doesn't expand external
